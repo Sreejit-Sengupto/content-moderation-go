@@ -6,8 +6,9 @@ import (
 
 // Allowed origins for CORS
 var allowedOrigins = map[string]bool{
-	"http://localhost:3000": true,
-	"http://localhost:3001": true,
+	"http://localhost:3000":                           true,
+	"http://localhost:3001":                           true,
+	"https://content-moderation-go-client.vercel.app": true,
 }
 
 // Middleware adds CORS headers to allow requests from the Next.js frontend
