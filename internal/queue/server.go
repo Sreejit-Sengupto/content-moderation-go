@@ -11,7 +11,7 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-func StartWorkerServer() {
+func StartWorkerServer(shutdown <-chan struct{}) {
 	redisURL := os.Getenv("REDIS_URL")
 	if redisURL == "" {
 		log.Fatal("REDIS_URL environment variable not set")
@@ -45,7 +45,17 @@ func StartWorkerServer() {
 	mux.HandleFunc(tasks.TypeAggregationDelivery, aggregation.HandleAggregationDelivery)
 
 	log.Println("Starting Asynq worker server...")
-	if err := srv.Run(mux); err != nil {
-		log.Fatalf("could not run server: %v", err)
-	}
+
+	// Start the server in a goroutine
+	go func() {
+		if err := srv.Run(mux); err != nil {
+			log.Printf("Asynq worker server stopped: %v", err)
+		}
+	}()
+
+	// Wait for shutdown signal
+	<-shutdown
+	log.Println("Asynq worker server shutting down...")
+	srv.Shutdown()
+	log.Println("Asynq worker server stopped")
 }

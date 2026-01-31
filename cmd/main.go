@@ -1,8 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
 
 	"github.com/Sreejit-Sengupto/api/routes"
 	"github.com/Sreejit-Sengupto/internal/database"
@@ -37,13 +43,23 @@ func main() {
 	if err := gemini.InitGemini(); err != nil {
 		log.Fatalf("Failed to initialize Gemini: %v", err)
 		return
-
 	}
 
 	workerClient.InitClient()
 	defer workerClient.CloseClient()
 
-	go queue.StartWorkerServer()
+	// Channel to signal worker server shutdown
+	workerShutdown := make(chan struct{})
+
+	// WaitGroup to track goroutines
+	var wg sync.WaitGroup
+
+	// Start worker server
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		queue.StartWorkerServer(workerShutdown)
+	}()
 
 	// Init router
 	r := mux.NewRouter()
@@ -51,6 +67,55 @@ func main() {
 	// Route Handlers / Endpoints
 	routes.RegisterRoutes(r)
 
-	log.Println("Server started on :8080")
-	log.Fatal(http.ListenAndServe(":8080", cors.Middleware(r)))
+	// Create HTTP server
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: cors.Middleware(r),
+	}
+
+	// Start HTTP server in goroutine
+	go func() {
+		log.Println("Server started on :8080")
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("HTTP server error: %v", err)
+		}
+	}()
+
+	// Setup signal handling for graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Wait for shutdown signal
+	sig := <-quit
+	log.Printf("Received signal %v, initiating graceful shutdown...", sig)
+
+	// Create a context with timeout for shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Shutdown HTTP server
+	log.Println("Shutting down HTTP server...")
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Printf("HTTP server shutdown error: %v", err)
+	}
+
+	// Signal worker server to shutdown
+	log.Println("Shutting down worker server...")
+	close(workerShutdown)
+
+	// Wait for worker to finish with timeout
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		log.Println("All workers shut down gracefully")
+	case <-ctx.Done():
+		log.Println("Shutdown timed out")
+	}
+
+	log.Println("Server exited")
 }

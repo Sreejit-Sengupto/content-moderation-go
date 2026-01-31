@@ -33,7 +33,7 @@ func UploadContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if reqBody.Text != "" {
+	if reqBody.Text == "" {
 		response.JSONError(w, http.StatusBadRequest, "Text is required")
 	}
 
