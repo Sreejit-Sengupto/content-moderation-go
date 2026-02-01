@@ -44,46 +44,46 @@ const (
 )
 
 type Content struct {
-	ID               uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
-	Text             string
-	Image            string
-	Video            string
-	TextStatus       ContentStatus
-	ImageStatus      ContentStatus
-	VideoStatus      ContentStatus
-	FinalStatus      ContentStatus
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	ModerationResult []ModerationResult
-	ModerationEvents []ModerationEvents
-	Audit            []Audit
+	ID               uuid.UUID          `gorm:"type:uuid;default:uuid_generate_v4();primaryKey" json:"id"`
+	Text             string             `json:"text"`
+	Image            string             `json:"image"`
+	Video            string             `json:"video"`
+	TextStatus       ContentStatus      `json:"textStatus"`
+	ImageStatus      ContentStatus      `json:"imageStatus"`
+	VideoStatus      ContentStatus      `json:"videoStatus"`
+	FinalStatus      ContentStatus      `json:"finalStatus"`
+	CreatedAt        time.Time          `json:"createdAt"`
+	UpdatedAt        time.Time          `json:"updatedAt"`
+	ModerationResult []ModerationResult `json:"moderationResult,omitempty"`
+	ModerationEvents []ModerationEvents `json:"moderationEvents,omitempty"`
+	Audit            []Audit            `json:"audits"`
 }
 
 type ModerationResult struct {
-	ID           uuid.UUID     `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
-	ContentId    uuid.UUID     `gorm:"not null"`
-	Content      Content       `gorm:"foreignKey:ContentId"`
-	MediaType    MediaType     `gorm:"not null"`
-	Status       ContentStatus `gorm:"not null"`
-	RiskScore    float64       `gorm:"not null"`
-	Explaination string
-	CreatedAt    time.Time
+	ID           uuid.UUID     `gorm:"type:uuid;default:uuid_generate_v4();primaryKey" json:"id"`
+	ContentId    uuid.UUID     `gorm:"not null" json:"contentId"`
+	Content      Content       `gorm:"foreignKey:ContentId" json:"-"`
+	MediaType    MediaType     `gorm:"not null" json:"mediaType"`
+	Status       ContentStatus `gorm:"not null" json:"status"`
+	RiskScore    float64       `gorm:"not null" json:"riskScore"`
+	Explaination string        `json:"explanation"`
+	CreatedAt    time.Time     `json:"createdAt"`
 }
 
 type ModerationEvents struct {
-	ID        uuid.UUID      `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
-	ContentId uuid.UUID      `gorm:"not null"`
-	Content   Content        `gorm:"foreignKey:ContentId"`
-	EventType EventType      `gorm:"not null"`
-	Payload   datatypes.JSON `gorm:"type:JSONB"`
-	CreatedAt time.Time
+	ID        uuid.UUID      `gorm:"type:uuid;default:uuid_generate_v4();primaryKey" json:"id"`
+	ContentId uuid.UUID      `gorm:"not null" json:"contentId"`
+	Content   Content        `gorm:"foreignKey:ContentId" json:"-"`
+	EventType EventType      `gorm:"not null" json:"eventType"`
+	Payload   datatypes.JSON `gorm:"type:JSONB" json:"payload"`
+	CreatedAt time.Time      `json:"createdAt"`
 }
 
 type Audit struct {
-	ID        uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
-	ContentId uuid.UUID `gorm:"not null"`
-	Content   Content   `gorm:"foreignKey:ContentId"`
-	Action    Action    `gorm:"not null"`
-	Reason    string
-	CreatedAt time.Time
+	ID        uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey" json:"id"`
+	ContentId uuid.UUID `gorm:"not null" json:"contentId"`
+	Content   Content   `gorm:"foreignKey:ContentId" json:"-"`
+	Action    Action    `gorm:"not null" json:"action"`
+	Reason    string    `json:"reason"`
+	CreatedAt time.Time `json:"createdAt"`
 }

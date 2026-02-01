@@ -34,7 +34,9 @@ func main() {
 	// Enable uuid-ossp extension
 	database.DB.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
 
-	database.DB.AutoMigrate(&models.Content{}, &models.Audit{}, &models.ModerationResult{}, &models.ModerationEvents{})
+	if os.Getenv("RUN_MIGRATION") == "TRUE" {
+		database.DB.AutoMigrate(&models.Content{}, &models.Audit{}, &models.ModerationResult{}, &models.ModerationEvents{})
+	}
 
 	// init imagekit
 	imagekit.InitImageKit()
