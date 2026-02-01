@@ -10,6 +10,7 @@ import (
 	"github.com/Sreejit-Sengupto/utils/response"
 	"github.com/Sreejit-Sengupto/utils/validator"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 )
 
 func GetAllContent(w http.ResponseWriter, r *http.Request) {
@@ -20,6 +21,88 @@ func GetAllContent(w http.ResponseWriter, r *http.Request) {
 		response.JSONError(w, http.StatusNotFound, "Failed to fetch all content")
 	}
 	response.JSON(w, http.StatusOK, contents)
+}
+
+func GetContentByID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		response.JSONError(w, http.StatusBadRequest, "Invalid content ID")
+		return
+	}
+
+	db := database.DB
+	var content models.Content
+	result := db.Find(&content, models.Content{ID: id})
+	if result.Error != nil {
+		response.JSONError(w, http.StatusNotFound, "Failed to fetch content details for the id "+idStr)
+	}
+	response.JSON(w, http.StatusOK, content)
+}
+
+func GetModerationResults(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		response.JSONError(w, http.StatusBadRequest, "Invalid content ID")
+		return
+	}
+
+	db := database.DB
+
+	var content models.Content
+
+	result := db.Preload("ModerationResult").Find(&content, models.Content{ID: id})
+	if result.Error != nil {
+		fmt.Println(result.Error)
+		response.JSONError(w, http.StatusNotFound, "Failed to fetch results")
+		return
+	}
+
+	response.JSON(w, http.StatusOK, content)
+}
+
+func GetModerationEvents(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		response.JSONError(w, http.StatusBadRequest, "Invalid content ID")
+		return
+	}
+
+	db := database.DB
+
+	var content models.Content
+	result := db.Preload("ModerationEvents").Find(&content, models.Content{ID: id})
+	if result.Error != nil {
+		response.JSONError(w, http.StatusNotFound, "Failed to fetch events")
+		return
+	}
+	response.JSON(w, http.StatusOK, content)
+}
+
+func GetModerationAudits(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		response.JSONError(w, http.StatusBadRequest, "Invalid content ID")
+		return
+	}
+
+	db := database.DB
+
+	var content models.Content
+	result := db.Preload("Audit").Find(&content, models.Content{ID: id})
+	if result.Error != nil {
+		response.JSONError(w, http.StatusNotFound, "Failed to fetch events")
+		return
+	}
+	response.JSON(w, http.StatusOK, content)
 }
 
 func UpdateContent(w http.ResponseWriter, r *http.Request) {
